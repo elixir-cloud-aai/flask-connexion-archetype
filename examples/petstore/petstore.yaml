@@ -9,6 +9,8 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
   - url: http://localhost/
+security:
+  - BEARER: []
 paths:
   /pets:
     get:
@@ -117,6 +119,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 components:
+  securitySchemes:
+    BEARER:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: app.checkAuth
   schemas:
     Pet:
       allOf:
