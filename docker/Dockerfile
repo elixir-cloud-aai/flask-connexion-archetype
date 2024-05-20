@@ -1,4 +1,4 @@
-ARG PY_IMAGE=3.11-slim-bullseye
+ARG PY_IMAGE=3.11-slim-bookworm
 FROM python:$PY_IMAGE as base
 
 # Metadata
