@@ -1,14 +1,16 @@
 """Methods to manage permission management configuration"""
 
 import logging
+from functools import wraps
+from pkg_resources import resource_filename
+from pathlib import Path
+from typing import (Callable, Optional, Tuple)
+
 from connexion import App
 from connexion.exceptions import Forbidden
-from flask_authz import CasbinEnforcer
-from pkg_resources import resource_filename
-from typing import (Callable, Optional, Tuple)
-from functools import wraps
 from flask import current_app
 from flask.wrappers import Response
+from flask_authz import CasbinEnforcer
 
 from foca.models.config import (
     DBConfig,
@@ -50,7 +52,7 @@ def register_access_control(
     access_db_conf = DBConfig(
         collections={
             access_control_config.collection_name: CollectionConfig()
-        },
+        } if access_control_config.collection_name is not None else {},
         client=None
     )
 
@@ -113,7 +115,7 @@ def register_permission_specs(
         spec_path = access_control_config.api_specs
 
     spec = SpecConfig(
-        path=spec_path,
+        path=Path(spec_path),
         add_operation_fields={
             "x-openapi-router-controller": (
                 access_control_config.api_controllers
@@ -191,7 +193,9 @@ def check_permissions(
     """
 
     def _decorator_check_permissions(fn):
-        """User access decorator. Used to facilitate optional decorator arguments.
+        """User access decorator.
+
+        Used to facilitate optional decorator arguments.
 
         Args:
             fn: The function to be decorated.
@@ -200,7 +204,7 @@ def check_permissions(
             The response returned from the input function.
         """
         @wraps(fn)
-        def _wrapper(*args, **kwargs):
+        def _wrapper(*args, **kwargs) -> Tuple[Response, int]:
             """Wrapper for permissions decorator.
 
             Args:
