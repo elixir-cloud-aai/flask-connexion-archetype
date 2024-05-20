@@ -36,6 +36,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -e .[dev]
+          pip install setuptools
       - name: Lint with flake8
         run: flake8
       - name: Run mypy
