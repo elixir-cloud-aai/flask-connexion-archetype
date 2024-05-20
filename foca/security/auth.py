@@ -330,7 +330,7 @@ def _get_public_keys(
 
             # Convert to PEM if requested
             if pem:
-                key = key.public_bytes(
+                key = key.public_bytes(  # type: ignore
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 ).decode('utf-8').encode('unicode_escape').decode('utf-8')
