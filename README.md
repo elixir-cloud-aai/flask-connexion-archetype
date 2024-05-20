@@ -571,13 +571,13 @@ question etc.
 
 ![Logo_banner][img-logo-banner]
 
-[badge-build-status]: <https://travis-ci.com/elixir-cloud-aai/foca.svg?branch=dev>
+[badge-build-status]: <https://github.com/elixir-cloud-aai/foca/actions/workflows/checks.yaml/badge.svg>
 [badge-coverage]: <https://codecov.io/gh/elixir-cloud-aai/foca/branch/dev/graph/badge.svg?branch=dev>
 [badge-docs]: <https://readthedocs.org/projects/foca/badge/>
 [badge-github-tag]: <https://img.shields.io/github/v/tag/elixir-cloud-aai/foca?color=C39BD3>
 [badge-license]: <https://img.shields.io/badge/license-Apache%202.0-blue.svg>
 [badge-pypi]: <https://img.shields.io/pypi/v/foca.svg?style=flat&color=C39BD3>
-[badge-url-build-status]: <https://travis-ci.com/elixir-cloud-aai/foca>
+[badge-url-build-status]: <https://github.com/elixir-cloud-aai/foca/actions/workflows/checks.yaml>
 [badge-url-coverage]: <https://codecov.io/gh/elixir-cloud-aai/foca?branch=dev>
 [badge-url-docs]: <https://foca.readthedocs.io/en/latest/>
 [badge-url-github-tag]: <https://github.com/elixir-cloud-aai/foca/releases>
