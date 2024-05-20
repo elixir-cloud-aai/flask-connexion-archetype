@@ -51,7 +51,7 @@ def _get_by_path(
     Returns:
         Value of innermost key.
     """
-    return reduce(operator.getitem, key_sequence, obj)  # type: ignore
+    return reduce(operator.getitem, key_sequence, obj)
 
 
 class ExceptionLoggingEnum(Enum):
@@ -1199,6 +1199,7 @@ class Config(FOCABaseConfig):
         db: Database config parameters.
         jobs: Background job config parameters.
         log: Logger config parameters.
+        custom: Custom config parameters. (Added by consumers)
 
     Attributes:
         server: Server config parameters.
@@ -1208,6 +1209,7 @@ class Config(FOCABaseConfig):
         db: Database config parameters.
         jobs: Background job config parameters.
         log: Logger config parameters.
+        custom: Custom config parameters. (Added by consumers)
 
     Raises:
         pydantic.ValidationError: The class was instantianted with an illegal
@@ -1247,7 +1249,7 @@ gFormatterConfig(class_formatter='logging.Formatter', style='{', format='[{asc\
 time}: {levelname:<8}] {message} [{name}]')}, handlers={'console': LogHandlerC\
 onfig(class_handler='logging.StreamHandler', level=20, formatter='standard', s\
 tream='ext://sys.stderr')}, root=LogRootConfig(level=10, handlers=['console'])\
-))
+custom=None))
     """
     server: ServerConfig = ServerConfig()
     exceptions: ExceptionConfig = ExceptionConfig()
@@ -1256,6 +1258,7 @@ tream='ext://sys.stderr')}, root=LogRootConfig(level=10, handlers=['console'])\
     db: Optional[MongoConfig] = None
     jobs: Optional[JobsConfig] = None
     log: LogConfig = LogConfig()
+    custom: Any = None
 
     class Config:
         """Configuration for Pydantic model class."""
