@@ -32,7 +32,7 @@ def addPet(pet):
     )
     counter = 0
     ctr = db_collection.find({}).sort([('$natural', -1)])
-    if not ctr.count() == 0:
+    if not db_collection.count_documents({}) == 0:
         counter = ctr[0].get('id') + 1
     record = {
         "id": counter,

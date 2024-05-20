@@ -113,11 +113,12 @@ def getAllPermissions(limit=None) -> List[Dict]:
 
     if not limit:
         limit = 0
-    permissions = db_coll_permission.find(
-        filter={},
-        projection={'_id': False}
-    ).sort([('$natural', -1)]).limit(limit)
-    permissions = list(permissions)
+    permissions = list(
+        db_coll_permission.find(
+            filter={},
+            projection={'_id': False}
+        ).sort([('$natural', -1)]).limit(limit)
+    )
     user_permission_list = []
     for _permission in permissions:
         policy_type = _permission.get("ptype", None)

@@ -43,16 +43,19 @@ def register_mongodb(
             db_conf.client = mongo.db
 
             # Add collections
-            if db_conf.collections is not None:
+            if db_conf.collections is not None and db_conf.client is not None:
                 for coll_name, coll_conf in db_conf.collections.items():
 
-                    coll_conf.client = mongo.db[coll_name]
+                    coll_conf.client = db_conf.client[coll_name]
                     logger.info(
                         f"Added database collection '{coll_name}'."
                     )
 
                     # Add indexes
-                    if coll_conf.indexes is not None:
+                    if (
+                        coll_conf.indexes is not None
+                        and coll_conf.client is not None
+                    ):
                         # Remove already created indexes if any
                         coll_conf.client.drop_indexes()
                         for index in coll_conf.indexes:
@@ -94,10 +97,10 @@ def add_new_database(
     db_conf.client = mongo.db
 
     # Add collections
-    if db_conf.collections is not None:
+    if db_conf.collections is not None and db_conf.client is not None:
         for coll_name, coll_conf in db_conf.collections.items():
 
-            coll_conf.client = mongo.db[coll_name]
+            coll_conf.client = db_conf.client[coll_name]
             logger.info(
                 f"Added database collection '{coll_name}'."
             )

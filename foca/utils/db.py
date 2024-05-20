@@ -3,7 +3,7 @@
 from typing import (Any, Mapping, Optional)
 
 from bson.objectid import ObjectId
-from pymongo import collection as Collection
+from pymongo.collection import Collection
 
 
 def find_one_latest(collection: Collection) -> Optional[Mapping[Any, Any]]:

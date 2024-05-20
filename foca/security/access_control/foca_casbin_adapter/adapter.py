@@ -36,8 +36,9 @@ class Adapter(persist.Adapter):
         self, uri: str, dbname: str, collection: Optional[str] = "casbin_rule"
     ):
         """Create an adapter for Mongodb."""
-        client = MongoClient(uri)
+        client: MongoClient = MongoClient(uri)
         db = client[dbname]
+        assert collection is not None
         self._collection = db[collection]
 
     def load_policy(self, model: CasbinRule):
@@ -100,8 +101,9 @@ class Adapter(persist.Adapter):
                 for result in results
                 if line_dict_keys_len == len(result.keys()) - 1
             ]
-            results = self._collection.delete_many({"_id": {"$in": to_delete}})
-            return results.deleted_count
+            return self._collection.delete_many(
+                {"_id": {"$in": to_delete}}
+            ).deleted_count
 
     def save_policy(self, model: Model) -> bool:
         """Method to save a casbin model.
