@@ -6,11 +6,11 @@ def listPets():
 
 
 def createPets():
-    return{}
+    return {}
 
 
 def showPetById():
-    return{}
+    return {}
 
 
 def putPetsById():

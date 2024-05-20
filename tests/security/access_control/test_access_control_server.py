@@ -193,8 +193,9 @@ class TestGetAllPermissions(BaseTestAccessControl):
             assert res == [data]
 
     def test_getAllPermissions_filters(self):
-        """Test for getting a list of all available permissions; all defined filters
-        specified.
+        """Test for getting a list of all available permissions.
+
+        All defined filters specified.
         """
         app = Flask(__name__)
         base_config = Config(db=MongoConfig(**MONGO_CONFIG))

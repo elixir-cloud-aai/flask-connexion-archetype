@@ -593,7 +593,7 @@ ion=None)
         absolute path provided.
         """
         # if path is not a list, convert it to single-item list
-        if(isinstance(v, Path)):
+        if (isinstance(v, Path)):
             if not v.is_absolute():
                 return [Path.cwd() / v]
             return [v]
@@ -1181,10 +1181,10 @@ onsole']))
     version: int = 1
     disable_existing_loggers: bool = False
     formatters: Optional[Dict[str, LogFormatterConfig]] = {
-        "standard": LogFormatterConfig(),
+        "standard": LogFormatterConfig(),  # type: ignore
     }
     handlers: Optional[Dict[str, LogHandlerConfig]] = {
-        "console": LogHandlerConfig(),
+        "console": LogHandlerConfig(),  # type: ignore
     }
     root: Optional[LogRootConfig] = LogRootConfig()
 

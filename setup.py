@@ -74,8 +74,8 @@ setup(
     },
     packages=find_packages(),
     setup_requires=[
-        "setuptools_git==1.2",
-        "twine==3.8.0"
+        "setuptools_git>=1.2",
+        "twine>=3.8.0"
     ],
     install_requires=install_requires,
     extras_require={

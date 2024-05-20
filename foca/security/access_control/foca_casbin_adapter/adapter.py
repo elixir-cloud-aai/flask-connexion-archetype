@@ -42,7 +42,9 @@ class Adapter(persist.Adapter):
         self._collection = db[collection]
 
     def load_policy(self, model: CasbinRule):
-        """Implementing add Interface for casbin. Load all policy rules from mongodb
+        """Implementing add Interface for casbin.
+
+        Load all policy rules from MongoDB.
 
         Args:
             model: CasbinRule object.
