@@ -4,11 +4,10 @@ from copy import deepcopy
 from enum import Enum
 from functools import reduce
 import importlib
+from importlib.resources import path as resource_path
 import operator
 from pathlib import Path
 from typing import (Any, Dict, List, Optional, Union)
-
-from pkg_resources import resource_filename
 
 from pydantic import (BaseModel, Field, validator)  # pylint: disable=E0611
 import pymongo
@@ -710,11 +709,11 @@ nf', owner_headers={'X-User', 'X-Group'}, user_headers={'X-User'})
         if path is not provided.
         """
         if v is None:
-            return str(
-                resource_filename(
-                    ACCESS_CONTROL_BASE_PATH, DEFAULT_MODEL_FILE
-                )
-            )
+            with resource_path(
+                ACCESS_CONTROL_BASE_PATH,
+                DEFAULT_MODEL_FILE
+            ) as _path:
+                return str(_path)
 
         model_path = Path(v)
         if not model_path.is_absolute():

@@ -1,16 +1,15 @@
 """Unit test for security.cors.py"""
 
-from foca.security.cors import enable_cors
-from flask import Flask
-
-
 from unittest.mock import patch
 
+from flask import Flask
 
-@patch('flask_cors.CORS')
-def test_enable_cors(test_patch):
-    """Test that CORS is called with app as a parameter
-    """
+from foca.security.cors import enable_cors
+
+
+def test_enable_cors():
+    """Test that CORS is called with app as a parameter."""
     app = Flask(__name__)
-    assert enable_cors(app) is None
-    assert test_patch.called_with(app)
+    with patch('foca.security.cors.CORS') as mock_cors:
+        enable_cors(app)
+        mock_cors.assert_called_once_with(app)

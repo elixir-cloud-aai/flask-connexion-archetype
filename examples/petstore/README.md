@@ -77,7 +77,7 @@ Some notes:
 > executing the build command. For example:
 >
 >    ```bash
->    export PETSTORE_PY_IMAGE=3.11-slim-bookworm
+>    export PETSTORE_PY_IMAGE=3.12-slim-bookworm
 >    ```
 >
 > * In case Docker complains about port conflicts or if any of the used ports

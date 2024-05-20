@@ -2,7 +2,7 @@
 
 import logging
 from functools import wraps
-from pkg_resources import resource_filename
+from importlib.resources import path as resource_path
 from pathlib import Path
 from typing import (Callable, Optional, Tuple)
 
@@ -108,9 +108,10 @@ def register_permission_specs(
     """
     # Check if default, get package path variables for specs.
     if access_control_config.api_specs is None:
-        spec_path = str(resource_filename(
+        with resource_path(
             ACCESS_CONTROL_BASE_PATH, DEFAULT_API_SPEC_PATH
-        ))
+        ) as _path:
+            spec_path = str(_path)
     else:
         spec_path = access_control_config.api_specs
 

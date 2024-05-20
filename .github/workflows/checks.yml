@@ -21,7 +21,8 @@ jobs:
         py-version-img: [
           ["3.9", "3.9-slim-bookworm"],
           ["3.10", "3.10-slim-bookworm"],
-          ["3.11", "3.11-slim-bookworm"]
+          ["3.11", "3.11-slim-bookworm"],
+          ["3.12", "3.12-slim-bookworm"],
         ]
         mongodb-version: ["4.4", "5.0", "6.0", "7.0"]
         mongodb-port: [12345]
@@ -83,7 +84,8 @@ jobs:
         py-version-img-tag: [
           ["3.9", "3.9-slim-bookworm", ""],
           ["3.10", "3.10-slim-bookworm", ""],
-          ["3.11", "3.11-slim-bookworm", "latest"],
+          ["3.11", "3.11-slim-bookworm", ""],
+          ["3.12", "3.12-slim-bookworm", "latest"],
         ]
 
     steps:
