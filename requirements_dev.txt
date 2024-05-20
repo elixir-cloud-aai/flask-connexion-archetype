@@ -10,3 +10,4 @@ types-PyYAML
 types-requests
 types-setuptools
 types-urllib3
+typing_extensions>=4.11

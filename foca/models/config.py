@@ -12,7 +12,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Self,
     Tuple,
     Type,
     Union,
@@ -26,6 +25,7 @@ from pydantic import (
     model_validator,
 )
 from pymongo import collection, database
+from typing_extensions import Self
 
 from foca.security.access_control.constants import (
     ACCESS_CONTROL_BASE_PATH,
