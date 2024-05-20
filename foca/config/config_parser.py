@@ -68,14 +68,14 @@ class ConfigParser():
             )
         if format_logs:
             self._configure_logging()
-        logger.debug(f"Parsed config: {self.config.dict(by_alias=True)}")
+        logger.debug(f"Parsed config: {self.config.model_dump(by_alias=True)}")
 
     def _configure_logging(self) -> None:
         """Configure logging."""
         try:
-            dictConfig(self.config.log.dict(by_alias=True))
+            dictConfig(self.config.log.model_dump(by_alias=True))
         except Exception as e:
-            dictConfig(LogConfig().dict(by_alias=True))
+            dictConfig(LogConfig().model_dump(by_alias=True))
             logger.warning(
                 f"Failed to configure logging. Falling back to default "
                 f"settings. Original error: {type(e).__name__}: {e}"

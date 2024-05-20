@@ -31,35 +31,35 @@ TEST_FILE_INVALID_LOG = "tests/test_files/conf_log_invalid.yaml"
 
 def test_config_parser_valid_config_file():
     """Test valid YAML parsing."""
-    conf = ConfigParser(TEST_FILE)
-    assert type(conf.config.dict()) == type(TEST_DICT)
+    conf = ConfigParser(Path(TEST_FILE))
+    assert type(conf.config.model_dump()) == type(TEST_DICT)
     assert isinstance(conf.config, type(TEST_CONFIG_INSTANCE))
 
 
 def test_config_parser_invalid_config_file():
     """Test invalid YAML parsing."""
     with pytest.raises(ValidationError):
-        ConfigParser(TEST_FILE_INVALID)
+        ConfigParser(Path(TEST_FILE_INVALID))
 
 
 def test_config_parser_invalid_file_path():
     """Test invalid file path."""
-    conf = ConfigParser(TEST_FILE)
+    conf = ConfigParser(Path(TEST_FILE))
     with pytest.raises(OSError):
-        assert conf.parse_yaml("") is not None
+        assert conf.parse_yaml(Path("")) is not None
 
 
 def test_config_parser_invalid_log_config():
     """Test invalid log config YAML."""
-    conf = ConfigParser(TEST_FILE_INVALID_LOG)
-    assert type(conf.config.dict()) == type(TEST_DICT)
+    conf = ConfigParser(Path(TEST_FILE_INVALID_LOG))
+    assert type(conf.config.model_dump()) == type(TEST_DICT)
     assert isinstance(conf.config, type(TEST_CONFIG_INSTANCE))
 
 
 def test_config_parser_with_custom_config_model():
     """Test with valid custom config model class."""
     conf = ConfigParser(
-        config_file=TEST_FILE,
+        config_file=Path(TEST_FILE),
         custom_config_model=TEST_CONFIG_MODEL,
     )
     assert isinstance(conf.config.custom.param, str)
@@ -68,14 +68,14 @@ def test_config_parser_with_custom_config_model():
 
 def test_process_yaml_valid_config_file():
     """Test process_yaml with valid YAML file."""
-    result = ConfigParser.parse_yaml(TEST_FILE)
+    result = ConfigParser.parse_yaml(Path(TEST_FILE))
     assert isinstance(result, dict)
 
 
 def test_process_yaml_invalid_config_file():
     """Test process_yaml with invalid YAML file."""
     with pytest.raises(ValueError):
-        ConfigParser.parse_yaml(TEST_FILE_INVALID_YAML)
+        ConfigParser.parse_yaml(Path(TEST_FILE_INVALID_YAML))
 
 
 def test_process_yaml_missing_file():
@@ -83,7 +83,7 @@ def test_process_yaml_missing_file():
     with mock.patch("foca.config.config_parser.open") as mock_open:
         mock_open.side_effect = OSError
         with pytest.raises(OSError):
-            ConfigParser.parse_yaml(TEST_FILE)
+            ConfigParser.parse_yaml(Path(TEST_FILE))
 
 
 def test_merge_yaml_with_no_args():
@@ -95,14 +95,14 @@ def test_merge_yaml_with_no_args():
 
 def test_merge_yaml_with_two_args():
     """Test merge_yaml with no arguments."""
-    yaml_list = [PATH, PATH_ADDITION]
+    yaml_list = [Path(PATH), Path(PATH_ADDITION)]
     res = ConfigParser.merge_yaml(*yaml_list)
     assert 'put' in res['paths']['/pets/{petId}']
 
 
 def test_parse_custom_config_valid_model():
     """Test ``.parse_custom_config()`` with a valid model class."""
-    conf = ConfigParser(config_file=TEST_FILE)
+    conf = ConfigParser(config_file=Path(TEST_FILE))
     result = conf.parse_custom_config(model=TEST_CONFIG_MODEL)
     assert isinstance(result, BaseModel)
     assert isinstance(result.param, str)
@@ -111,20 +111,20 @@ def test_parse_custom_config_valid_model():
 
 def test_parse_custom_config_model_module_not_exists():
     """Test ``.parse_custom_config()`` when module does not exist."""
-    conf = ConfigParser(config_file=TEST_FILE)
+    conf = ConfigParser(config_file=Path(TEST_FILE))
     with pytest.raises(ValueError):
         conf.parse_custom_config(model=TEST_CONFIG_MODEL_MODULE_NOT_EXISTS)
 
 
 def test_parse_custom_config_model_not_exists():
     """Test ``.parse_custom_config()`` when model class does not exist."""
-    conf = ConfigParser(config_file=TEST_FILE)
+    conf = ConfigParser(config_file=Path(TEST_FILE))
     with pytest.raises(ValueError):
         conf.parse_custom_config(model=TEST_CONFIG_MODEL_NOT_EXISTS)
 
 
 def test_parse_custom_config_invalid():
     """Test ``.parse_custom_config()`` when model class does not exist."""
-    conf = ConfigParser(config_file=TEST_FILE_CUSTOM_INVALID)
+    conf = ConfigParser(config_file=Path(TEST_FILE_CUSTOM_INVALID))
     with pytest.raises(ValueError):
         conf.parse_custom_config(model=TEST_CONFIG_MODEL)

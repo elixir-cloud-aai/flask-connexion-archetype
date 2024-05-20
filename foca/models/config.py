@@ -7,10 +7,25 @@ import importlib
 from importlib.resources import path as resource_path
 import operator
 from pathlib import Path
-from typing import (Any, Dict, List, Optional, Union)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Self,
+    Tuple,
+    Type,
+    Union,
+)
 
-from pydantic import (BaseModel, Field, validator)  # pylint: disable=E0611
-import pymongo
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
+from pymongo import collection, database
 
 from foca.security.access_control.constants import (
     ACCESS_CONTROL_BASE_PATH,
@@ -18,12 +33,11 @@ from foca.security.access_control.constants import (
 )
 
 
-def _validate_log_level_choices(cls, level: int) -> int:
-    """Custom validation function for Pydantic to ensure that a valid
-    logging level is configured.
+def _validate_log_level_choices(cls, v: int) -> int:
+    """Ensure that a valid logging level is set.
 
     Args:
-        level: Log level choice to be validated.
+        v: Log level choice to be validated.
 
     Returns:
         Unmodified `level` value if validation succeeds.
@@ -32,9 +46,10 @@ def _validate_log_level_choices(cls, level: int) -> int:
         ValueError: Raised if validation fails.
     """
     CHOICES = [0, 10, 20, 30, 40, 50]
-    if level not in CHOICES:
-        raise ValueError(f"illegal log level specified: {level}")
-    return level
+    if v not in CHOICES:
+        raise ValueError(f"illegal log level specified: {v}")
+
+    return v
 
 
 def _get_by_path(
@@ -122,11 +137,7 @@ class PymongoDirectionEnum(Enum):
 
 class FOCABaseConfig(BaseModel):
     """Base configuration for FOCA models."""
-
-    class Config:
-        """Configuration for Pydantic model class."""
-        extra = 'forbid'
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
 
 class ServerConfig(FOCABaseConfig):
@@ -305,30 +316,24 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
     private_members: Optional[List[List[str]]] = None
     exceptions: str = "foca.errors.exceptions.exceptions"
     logging: ExceptionLoggingEnum = ExceptionLoggingEnum.oneline
-    mapping: Optional[Dict[str, Dict[str, Any]]] = None
+    mapping: Optional[Dict[Type[BaseException], Dict[str, Any]]] = None
 
-    # set mapping
-    @validator('mapping', always=True, allow_reuse=True)
-    def validate_mapping(cls, v, *, values):  # pylint: disable=E0213
-        """Validate that exceptions dictionary exists and can be imported, that
-        all exceptions have all required members and no additional members
-        (unless specifically allowed) and replace default value for field
-        mapping to the contents of the exceptions dictionary.
+    @model_validator(mode="after")
+    def validate_exceptions_mapping(self) -> Self:
+        """Validate exceptions mapping.
+
+        Make sure that the exceptions mapping is set and that it can be
+        imported. Ensure that all exceptions have all required members and no
+        additional members (unless specifically allowed). Replace default value
+        for field mapping to the contents of the exceptions dictionary.
+
+        Returns:
+            Model instance with exceptions mapping set.
         """
-        # Set allowed members
-        limited_members = False
-        if not (
-            isinstance(values['extension_members'], bool) and
-            values['extension_members']
-        ):
-            limited_members = True
-        allowed_members = deepcopy(values['required_members'])
-        if isinstance(values['extension_members'], list):
-            allowed_members += values['extension_members']
-        # Ensure that `exceptions` module can be imported
-        split_module = values['exceptions'].split('.')
+        # Ensure that exceptions can be imported and are of the correct type
+        split_module = self.exceptions.split(".")
         exc_dict_name = split_module.pop()
-        module_path = '.'.join(split_module)
+        module_path = ".".join(split_module)
         try:
             mod = importlib.import_module(module_path)
         except ModuleNotFoundError:
@@ -336,7 +341,6 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                 f"Module '{module_path}' referenced in field 'exceptions' "
                 "could not be found."
             )
-        # Ensure that `exceptions` module has attribute `exceptions`
         try:
             exc_dict = getattr(mod, exc_dict_name)
         except AttributeError:
@@ -344,74 +348,69 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                 f"Module '{module_path}' referenced in field 'exceptions' "
                 f"does not have attribute '{exc_dict_name}'."
             )
-        # Ensure that `exceptions` attribute is a dictionary
         if not isinstance(exc_dict, dict):
-            raise TypeError(
+            raise ValueError(
                 f"Attribute '{exc_dict_name}' in module '{module_path}' "
                 "referenced in field 'exceptions' is not a dictionary."
             )
-        # Ensure that `status_member` is `required_member`
-        if not values['status_member'] in values['required_members']:
+
+        # Set allowed exception members
+        allowed_members = deepcopy(self.required_members)
+        if isinstance(self.extension_members, list):
+            allowed_members += self.extension_members
+
+        # Set flag to determine if additional members are allowed
+        limited_members: bool = True if not (
+            isinstance(self.extension_members, bool) and self.extension_members
+        ) else False
+
+        # Ensure that status member is among required members
+        if self.status_member not in self.required_members:
             raise ValueError(
                 "Status member is not among required members."
             )
-        # Ensure that public members are a subset of required and
-        # allowed extension members, if any
-        if limited_members and values['public_members']:
-            if not all(m in allowed_members for m in values['public_members']):
-                raise ValueError(
-                    "Public members have more fields than are allowed by "
-                    "'required_members' and 'extension_members'."
-                )
-        # Ensure that private members are a subset of required and
-        # allowed extension members, if any
-        if limited_members and values['private_members']:
-            if not all(
-                m in allowed_members for m in values['private_members']
-            ):
-                raise ValueError(
-                    "Private members have more fields than are allowed by "
-                    "'required_members' and 'extension_members'."
-                )
-        # Ensure that public and private members are compatible
+
+        # Filter members that are returned to the user
         if (
-                isinstance(values['public_members'], list) and
-                isinstance(values['private_members'], list)
+                isinstance(self.public_members, list) and
+                isinstance(self.private_members, list)
         ):
             raise ValueError(
                 "Both public and private member filters are active, but at "
                 "most one is allowed."
             )
-        # Iterate over `exceptions` dictionary
-        for key, val in exc_dict.items():
-            # Ensure that values of `exceptions` dictionary are dictionaries
-            if not isinstance(val, dict):
-                raise TypeError(
-                    f"Exception '{key}' in 'exceptions' dictionary does not "
-                    "have member dictionary as its value."
+        if limited_members and self.public_members:
+            if not all(m in allowed_members for m in self.public_members):
+                raise ValueError(
+                    "Public members have more fields than are allowed by "
+                    "'required_members' and 'extension_members'."
                 )
-            # Ensure that keys of 'exceptions' dictionary are exceptions
+        if limited_members and self.private_members:
+            if not all(m in allowed_members for m in self.private_members):
+                raise ValueError(
+                    "Private members have more fields than are allowed by "
+                    "'required_members' and 'extension_members'."
+                )
+
+        # Ensure that each exception fulfills all requirements
+        for key, val in exc_dict.items():
+
+            # Keys are exceptions
             try:
                 getattr(key, '__cause__')
             except AttributeError:
-                raise TypeError(
+                raise ValueError(
                     f"Key '{key}' in 'exceptions' dictionary does not appear "
                     "to be an Exception."
                 )
-            # Ensure that status member can be cast to type `int`
-            try:
-                status = _get_by_path(
-                    obj=val,
-                    key_sequence=values['status_member'],
-                )
-                status = int(status)
-            except (KeyError, ValueError):
+            # Values are dictionaries
+            if not isinstance(val, dict):
                 raise ValueError(
-                    f"Status member in exception '{key}' cannot be cast to "
-                    "type integer."
+                    f"Exception '{key}' in 'exceptions' dictionary does not "
+                    "have member dictionary as its value."
                 )
-            # Ensure that all required members are available
-            for keys in values['required_members']:
+            # All required members are present
+            for keys in self.required_members:
                 try:
                     _get_by_path(
                         obj=val,
@@ -422,8 +421,7 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                         f"Exception '{key}' in 'exceptions' dictionary does "
                         "not have all fields required by 'required_members'."
                     )
-            # Ensure that available members are a subset of required and
-            # allowed extension members, if any
+            # No forbidden members are present
             if limited_members:
                 members = deepcopy(val)
                 for keys in allowed_members:
@@ -437,7 +435,23 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                         "more fields than are allowed by 'required_members' "
                         "and 'extension_members'."
                     )
-        return exc_dict
+            # Status member values are integers
+            try:
+                status = _get_by_path(
+                    obj=val,
+                    key_sequence=self.status_member,
+                )
+                status = int(status)
+            except (KeyError, ValueError):
+                raise ValueError(
+                    f"Status member in exception '{key}' cannot be cast to "
+                    "type integer."
+                )
+
+        # Set mapping
+        self.mapping = exc_dict
+
+        return self
 
 
 class SpecConfig(FOCABaseConfig):
@@ -585,38 +599,28 @@ ion=None)
     disable_auth: bool = False
     connexion: Optional[Dict] = None
 
-    # resolve relative path
-    @validator('path', always=True, allow_reuse=True)
-    def set_abs_path(cls, v):  # pylint: disable=E0213
-        """Resolve path relative to caller's current working directory if no
-        absolute path provided.
-        """
-        # if path is not a list, convert it to single-item list
-        if (isinstance(v, Path)):
-            if not v.is_absolute():
-                return [Path.cwd() / v]
-            return [v]
-        else:
-            # make each path absolute
-            v = [
-                Path.cwd() / path
-                if not path.is_absolute()
-                else path
-                for path in v
-            ]
-        return v
+    @model_validator(mode="after")
+    def make_paths_absolute_and_set_path_out(self) -> Self:
+        """Make paths absolute and set output path if not specified.
 
-    # set default if no output file path provided
-    @validator('path_out', always=True, allow_reuse=True)
-    def set_default_out_path(cls, v, *, values):  # pylint: disable=E0213
-        """Set default output path for spec file if not supplied by user."""
-        if 'path' in values and values['path'] is not None:
-            if not v:
-                path = values['path'][0]
-                return path.parent / f"{path.stem}.modified.yaml"
-            if not v.is_absolute():
-                return Path.cwd() / v
-        return v
+        Returns:
+            Model instance with absolute paths and output path set.
+        """
+        paths = (
+            self.path if isinstance(self.path, list)
+            else [self.path]
+        )
+        self.path = [
+            path.resolve() if not path.is_absolute()
+            else path for path in paths
+        ]
+        if self.path_out is None:
+            _path = self.path[0].resolve()
+            self.path_out = _path.parent / f"{_path.stem}.modified.yaml"
+        else:
+            self.path_out = Path(self.path_out).resolve()
+
+        return self
 
 
 class APIConfig(FOCABaseConfig):
@@ -697,16 +701,23 @@ nf', owner_headers={'X-User', 'X-Group'}, user_headers={'X-User'})
     api_controllers: Optional[str] = None
     db_name: Optional[str] = None
     collection_name: Optional[str] = None
-    model: Optional[str] = None
+    model: Optional[str] = Field(default=None, validate_default=True)
     owner_headers: Optional[set] = None
     user_headers: Optional[set] = None
 
-    @validator('model', always=True, allow_reuse=True)
-    def validate_model_path(cls, v: Optional[Path]):  # pylint: disable=E0213
-        """
-        Resolve path relative to caller's current working directory if no
-        absolute path provided for model or Set to default file path for model
-        if path is not provided.
+    @field_validator('model', mode='before')
+    @classmethod
+    def validate_model_path(cls, v: Optional[str]) -> str:
+        """Validate the model path.
+
+        Args:
+            v: Model path.
+
+        Returns:
+            Model path as string; resolved relative to the caller's current
+            working directory if provided path is not absolute. If no path
+            is provided, return default model path.
+
         """
         if v is None:
             with resource_path(
@@ -882,16 +893,21 @@ class IndexConfig(FOCABaseConfig):
         IndexConfig(keys=[('name', -1), ('id', 1)], options={'unique': True, '\
 sparse': False})
     """
-    keys: Optional[Dict] = None
+    keys: Optional[Union[Dict, List[Tuple]]] = None
     options: Dict = dict()
 
-    @validator('keys', always=True, allow_reuse=True)
-    def store_enum_value(cls, v):  # pylint: disable=E0213
+    @field_validator("keys", mode="after")
+    @classmethod
+    def store_enum_value(
+        cls,
+        v: Optional[Union[Dict, List[Tuple]]]
+    ) -> Optional[Union[Dict, List[Tuple]]]:
         """Convert dict values of keys into list of tuples"""
-        if not v:
-            return None
-        else:
-            return [tuple([key, val]) for key, val in v.items()]
+        if v is not None and isinstance(v, dict):
+            v = [
+                tuple([key, val]) for key, val in v.items()
+            ]
+        return v
 
 
 class CollectionConfig(FOCABaseConfig):
@@ -919,7 +935,7 @@ class CollectionConfig(FOCABaseConfig):
 ={})], client=None)}, client=None)
     """
     indexes: Optional[List[IndexConfig]] = None
-    client: Optional[pymongo.collection.Collection] = None
+    client: Optional[collection.Collection] = None
 
 
 class DBConfig(FOCABaseConfig):
@@ -953,7 +969,7 @@ class DBConfig(FOCABaseConfig):
 Config(keys=[('last_name', 1)], options={})], client=None)}, client=None)
     """
     collections: Optional[Dict[str, CollectionConfig]] = None
-    client: Optional[pymongo.database.Database] = None
+    client: Optional[database.Database] = None
 
 
 class MongoConfig(FOCABaseConfig):
@@ -1092,9 +1108,7 @@ atter='standard', stream='ext://sys.stderr')
     formatter: str = "standard"
     stream: str = "ext://sys.stderr"
 
-    _validate_level = validator('level', allow_reuse=True)(
-        _validate_log_level_choices
-    )
+    _validate_level = field_validator('level')(_validate_log_level_choices)
 
 
 class LogRootConfig(FOCABaseConfig):
@@ -1122,9 +1136,7 @@ class LogRootConfig(FOCABaseConfig):
     level: int = 10
     handlers: Optional[List[str]] = ["console"]
 
-    _validate_level = validator('level', allow_reuse=True)(
-        _validate_log_level_choices
-    )
+    _validate_level = field_validator('level')(_validate_log_level_choices)
 
 
 class LogConfig(FOCABaseConfig):
@@ -1256,7 +1268,4 @@ tream='ext://sys.stderr')}, root=LogRootConfig(level=10, handlers=['console'])\
     db: Optional[MongoConfig] = None
     jobs: Optional[JobsConfig] = None
     log: LogConfig = LogConfig()
-
-    class Config:
-        """Configuration for Pydantic model class."""
-        extra = 'allow'
+    model_config = ConfigDict(extra='allow')
