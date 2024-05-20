@@ -18,7 +18,7 @@ from foca.models.config import (
 
 DIR = Path(__file__).parent / "test_files"
 EXCEPTIONS_NO_DICT = []
-EXCEPTIONS_NOT_NESTED = {'a': 'b'}
+EXCEPTIONS_NOT_NESTED = {Exception: 'b'}
 EXCEPTIONS_NOT_EXC = {'a': {'status': 400, 'title': 'Bad Request'}}
 REQUIRED_MEMBERS = [['title'], ['status']]
 MEMBER_TITLE = ['title']
