@@ -33,11 +33,11 @@ from foca.security.access_control.constants import (
 )
 
 
-def _validate_log_level_choices(cls, v: int) -> int:
+def _validate_log_level_choices(cls, level: int) -> int:
     """Ensure that a valid logging level is set.
 
     Args:
-        v: Log level choice to be validated.
+        level: Log level choice to be validated.
 
     Returns:
         Unmodified `level` value if validation succeeds.
@@ -46,10 +46,10 @@ def _validate_log_level_choices(cls, v: int) -> int:
         ValueError: Raised if validation fails.
     """
     CHOICES = [0, 10, 20, 30, 40, 50]
-    if v not in CHOICES:
-        raise ValueError(f"illegal log level specified: {v}")
+    if level not in CHOICES:
+        raise ValueError(f"illegal log level specified: {level}")
 
-    return v
+    return level
 
 
 def _get_by_path(
@@ -336,18 +336,18 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
         module_path = ".".join(split_module)
         try:
             mod = importlib.import_module(module_path)
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as exc:
             raise ValueError(
                 f"Module '{module_path}' referenced in field 'exceptions' "
                 "could not be found."
-            )
+            ) from exc
         try:
             exc_dict = getattr(mod, exc_dict_name)
-        except AttributeError:
+        except AttributeError as exc:
             raise ValueError(
                 f"Module '{module_path}' referenced in field 'exceptions' "
                 f"does not have attribute '{exc_dict_name}'."
-            )
+            ) from exc
         if not isinstance(exc_dict, dict):
             raise ValueError(
                 f"Attribute '{exc_dict_name}' in module '{module_path}' "
@@ -360,9 +360,9 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
             allowed_members += self.extension_members
 
         # Set flag to determine if additional members are allowed
-        limited_members: bool = True if not (
+        limited_members: bool = not (
             isinstance(self.extension_members, bool) and self.extension_members
-        ) else False
+        )
 
         # Ensure that status member is among required members
         if self.status_member not in self.required_members:
@@ -379,18 +379,24 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                 "Both public and private member filters are active, but at "
                 "most one is allowed."
             )
-        if limited_members and self.public_members:
-            if not all(m in allowed_members for m in self.public_members):
-                raise ValueError(
-                    "Public members have more fields than are allowed by "
-                    "'required_members' and 'extension_members'."
-                )
-        if limited_members and self.private_members:
-            if not all(m in allowed_members for m in self.private_members):
-                raise ValueError(
-                    "Private members have more fields than are allowed by "
-                    "'required_members' and 'extension_members'."
-                )
+        if (
+            limited_members
+            and self.public_members
+            and any(m not in allowed_members for m in self.public_members)
+        ):
+            raise ValueError(
+                "Public members have more fields than are allowed by "
+                "'required_members' and 'extension_members'."
+            )
+        if (
+            limited_members
+            and self.private_members
+            and any(m not in allowed_members for m in self.private_members)
+        ):
+            raise ValueError(
+                "Private members have more fields than are allowed by "
+                "'required_members' and 'extension_members'."
+            )
 
         # Ensure that each exception fulfills all requirements
         for key, val in exc_dict.items():
@@ -398,11 +404,11 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
             # Keys are exceptions
             try:
                 getattr(key, '__cause__')
-            except AttributeError:
+            except AttributeError as exc:
                 raise ValueError(
                     f"Key '{key}' in 'exceptions' dictionary does not appear "
                     "to be an Exception."
-                )
+                ) from exc
             # Values are dictionaries
             if not isinstance(val, dict):
                 raise ValueError(
@@ -416,11 +422,11 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                         obj=val,
                         key_sequence=keys,
                     )
-                except (KeyError, ValueError):
+                except (KeyError, ValueError) as exc:
                     raise ValueError(
                         f"Exception '{key}' in 'exceptions' dictionary does "
                         "not have all fields required by 'required_members'."
-                    )
+                    ) from exc
             # No forbidden members are present
             if limited_members:
                 members = deepcopy(val)
@@ -442,11 +448,11 @@ imeout'>: {'title': 'Gateway Timeout', 'status': 504}})
                     key_sequence=self.status_member,
                 )
                 status = int(status)
-            except (KeyError, ValueError):
+            except (KeyError, ValueError) as exc:
                 raise ValueError(
                     f"Status member in exception '{key}' cannot be cast to "
                     "type integer."
-                )
+                ) from exc
 
         # Set mapping
         self.mapping = exc_dict
@@ -611,8 +617,8 @@ ion=None)
             else [self.path]
         )
         self.path = [
-            path.resolve() if not path.is_absolute()
-            else path for path in paths
+            path if path.is_absolute()
+            else path.resolve() for path in paths
         ]
         if self.path_out is None:
             _path = self.path[0].resolve()
