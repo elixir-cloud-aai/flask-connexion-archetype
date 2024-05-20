@@ -19,7 +19,7 @@ from foca.security.access_control.constants import (
 )
 
 
-def _validate_log_level_choices(level: int) -> int:
+def _validate_log_level_choices(cls, level: int) -> int:
     """Custom validation function for Pydantic to ensure that a valid
     logging level is configured.
 
@@ -32,9 +32,9 @@ def _validate_log_level_choices(level: int) -> int:
     Raises:
         ValueError: Raised if validation fails.
     """
-    choices = [0, 10, 20, 30, 40, 50]
-    if level not in choices:
-        raise ValueError("illegal log level specified")
+    CHOICES = [0, 10, 20, 30, 40, 50]
+    if level not in CHOICES:
+        raise ValueError(f"illegal log level specified: {level}")
     return level
 
 
@@ -593,7 +593,7 @@ ion=None)
         absolute path provided.
         """
         # if path is not a list, convert it to single-item list
-        if(isinstance(v, Path)):
+        if (isinstance(v, Path)):
             if not v.is_absolute():
                 return [Path.cwd() / v]
             return [v]
@@ -1181,10 +1181,10 @@ onsole']))
     version: int = 1
     disable_existing_loggers: bool = False
     formatters: Optional[Dict[str, LogFormatterConfig]] = {
-        "standard": LogFormatterConfig(),
+        "standard": LogFormatterConfig(),  # type: ignore
     }
     handlers: Optional[Dict[str, LogHandlerConfig]] = {
-        "console": LogHandlerConfig(),
+        "console": LogHandlerConfig(),  # type: ignore
     }
     root: Optional[LogRootConfig] = LogRootConfig()
 

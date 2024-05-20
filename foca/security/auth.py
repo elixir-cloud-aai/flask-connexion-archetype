@@ -319,7 +319,9 @@ def _get_public_keys(
     public_keys = {}
     for jwk in response.json().get(claim_keys, []):
         try:
-            key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+            key = jwt.algorithms.RSAAlgorithm.from_jwk(  # type:ignore
+                json.dumps(jwk)
+            )
 
             # Ensure key is public
             if not isinstance(key, RSAPublicKey):
@@ -328,7 +330,7 @@ def _get_public_keys(
 
             # Convert to PEM if requested
             if pem:
-                key = key.public_bytes(
+                key = key.public_bytes(  # type: ignore
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 ).decode('utf-8').encode('unicode_escape').decode('utf-8')
