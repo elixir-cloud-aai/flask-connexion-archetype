@@ -77,11 +77,11 @@ Some notes:
 > version of Python, you can set the Python image to be used as FOCA's base
 > image by defining the environment variable `PETSTORE_PY_IMAGE` before
 > executing the build command. For example:
->  
+>
 >    ```bash
->    export PETSTORE_PY_IMAGE=3.8-slim-buster
+>    export PETSTORE_PY_IMAGE=3.11-slim-bookworm
 >    ```
->  
+>
 > * In case Docker complains about port conflicts or if any of the used ports
 > are blocked by a firewall, you will need to re-map the conflicting port(s) in
 > the [Docker Compose config][app-docker-compose]. In particular, for each of
