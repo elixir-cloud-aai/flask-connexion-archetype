@@ -6,7 +6,7 @@ from importlib.resources import path as resource_path
 from pathlib import Path
 from typing import (Callable, Optional, Tuple)
 
-from connexion import App
+from connexion import FlaskApp
 from connexion.exceptions import Forbidden
 from flask import current_app
 from flask.wrappers import Response
@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 
 def register_access_control(
-    cnx_app: App,
+    cnx_app: FlaskApp,
     mongo_config: Optional[MongoConfig],
     access_control_config: AccessControlConfig
-) -> App:
+) -> FlaskApp:
     """Register access control configuration with flask app.
 
     Args:
@@ -66,7 +66,7 @@ def register_access_control(
     else:
         mongo_config.dbs[access_control_db] = access_db_conf
 
-    cnx_app.app.config.foca.db = mongo_config
+    cnx_app.app.config.foca.db = mongo_config  # type: ignore
 
     # Register new database for access control.
     add_new_database(
@@ -92,7 +92,7 @@ def register_access_control(
 
 
 def register_permission_specs(
-    app: App,
+    app: FlaskApp,
     access_control_config: AccessControlConfig
 ):
     """Register open api specs for permission management.
@@ -140,10 +140,10 @@ def register_permission_specs(
 
 
 def register_casbin_enforcer(
-    app: App,
+    app: FlaskApp,
     access_control_config: AccessControlConfig,
     mongo_config: MongoConfig
-) -> App:
+) -> FlaskApp:
     """Method to add casbin permission enforcer.
 
     Args:

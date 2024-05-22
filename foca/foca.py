@@ -5,22 +5,22 @@ from pathlib import Path
 from typing import Optional
 
 from celery import Celery
-from connexion import App
+from connexion import FlaskApp
 
-from foca.security.access_control.register_access_control import (
-    register_access_control,
-)
+from foca.api.register_openapi import register_openapi
+from foca.config.config_parser import ConfigParser
+from foca.database.register_mongodb import register_mongodb
+from foca.errors.exceptions import register_exception_handler
+from foca.factories.celery_app import create_celery_app
+from foca.factories.connexion_app import create_connexion_app
 from foca.security.access_control.constants import (
     DEFAULT_SPEC_CONTROLLER,
     DEFAULT_ACCESS_CONTROL_DB_NAME,
     DEFAULT_ACESS_CONTROL_COLLECTION_NAME,
 )
-from foca.api.register_openapi import register_openapi
-from foca.config.config_parser import ConfigParser
-from foca.database.register_mongodb import register_mongodb
-from foca.errors.exceptions import register_exception_handler
-from foca.factories.connexion_app import create_connexion_app
-from foca.factories.celery_app import create_celery_app
+from foca.security.access_control.register_access_control import (
+    register_access_control,
+)
 from foca.security.cors import enable_cors
 
 # Get logger instance
@@ -84,31 +84,31 @@ class Foca:
         else:
             logger.info("Default app configuration used.")
 
-    def create_app(self) -> App:
+    def create_app(self) -> FlaskApp:
         """Set up and initialize FOCA-based Connexion app.
 
         Returns:
             Connexion application instance.
         """
         # Create Connexion app
-        cnx_app = create_connexion_app(self.conf)
+        connexion_app = create_connexion_app(self.conf)
         logger.info("Connexion app created.")
-
-        # Register error handlers
-        cnx_app = register_exception_handler(cnx_app)
-        logger.info("Error handler registered.")
 
         # Enable cross-origin resource sharing
         if self.conf.security.cors.enabled is True:
-            enable_cors(cnx_app.app)
+            connexion_app = enable_cors(connexion_app)
             logger.info("CORS enabled.")
         else:
             logger.info("CORS not enabled.")
 
+        # Register error handlers
+        connexion_app = register_exception_handler(connexion_app)
+        logger.info("Error handler registered.")
+
         # Register OpenAPI specs
         if self.conf.api.specs:
-            cnx_app = register_openapi(
-                app=cnx_app,
+            connexion_app = register_openapi(
+                app=connexion_app,
                 specs=self.conf.api.specs,
             )
         else:
@@ -116,15 +116,17 @@ class Foca:
 
         # Register MongoDB
         if self.conf.db:
-            cnx_app.app.config.foca.db = register_mongodb(
-                app=cnx_app.app,
-                conf=self.conf.db,
+            connexion_app.app.config.foca.db = (  # type: ignore
+                register_mongodb(
+                    app=connexion_app.app,
+                    conf=self.conf.db,
+                )
             )
             logger.info("Database registered.")
         else:
             logger.info("No database support configured.")
 
-        # Register permission management and casbin enforcer
+        # Register permission management and Casbin enforcer
         if self.conf.security.auth.required:
             if (
                 self.conf.security.access_control.api_specs is None
@@ -144,8 +146,8 @@ class Foca:
                     DEFAULT_ACESS_CONTROL_COLLECTION_NAME
                 )
 
-            cnx_app = register_access_control(
-                cnx_app=cnx_app,
+            connexion_app = register_access_control(
+                cnx_app=connexion_app,
                 mongo_config=self.conf.db,
                 access_control_config=self.conf.security.access_control,
             )
@@ -158,7 +160,7 @@ class Foca:
                     "Please enable security config to register access control."
                 )
 
-        return cnx_app
+        return connexion_app
 
     def create_celery_app(self) -> Celery:
         """Set up and initialize FOCA-based Celery app.
@@ -167,18 +169,20 @@ class Foca:
             Celery application instance.
         """
         # Create Connexion app
-        cnx_app = create_connexion_app(self.conf)
+        connexion_app = create_connexion_app(self.conf)
         logger.info("Connexion app created.")
 
         # Register error handlers
-        cnx_app = register_exception_handler(cnx_app)
+        connexion_app = register_exception_handler(connexion_app)
         logger.info("Error handler registered.")
 
         # Register MongoDB
         if self.conf.db:
-            cnx_app.app.config.foca.db = register_mongodb(
-                app=cnx_app.app,
-                conf=self.conf.db,
+            connexion_app.app.config.foca.db = (  # type: ignore
+                register_mongodb(
+                    app=connexion_app.app,
+                    conf=self.conf.db,
+                )
             )
             logger.info("Database registered.")
         else:
@@ -186,7 +190,7 @@ class Foca:
 
         # Create Celery app
         if self.conf.jobs:
-            celery_app = create_celery_app(cnx_app.app)
+            celery_app = create_celery_app(connexion_app.app)
             logger.info("Support for background tasks set up.")
         else:
             raise ValueError(

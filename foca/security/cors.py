@@ -1,20 +1,28 @@
 """Resources for cross-origin resource sharing (CORS)."""
 
 import logging
-from flask import Flask
 
-from flask_cors import CORS
+from connexion import FlaskApp
+from connexion.middleware import MiddlewarePosition
+from starlette.middleware.cors import CORSMiddleware
 
 # Get logger instance
 logger = logging.getLogger(__name__)
 
 
-def enable_cors(app: Flask) -> None:
-    """Enables cross-origin resource sharing (CORS) for Flask application
-    instance.
+def enable_cors(app: FlaskApp) -> FlaskApp:
+    """Enables cross-origin resource sharing (CORS).
 
     Args:
-        app: Flask application instance.
+        app: Connexion application instance.
     """
-    CORS(app)
-    logger.debug('Enabled CORS for Flask app.')
+    app.add_middleware(
+        CORSMiddleware,  # type: ignore
+        position=MiddlewarePosition.BEFORE_EXCEPTION,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.debug('Enabled CORS for Connexion app.')
+    return app

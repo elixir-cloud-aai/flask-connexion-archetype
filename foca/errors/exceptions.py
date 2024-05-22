@@ -5,14 +5,15 @@ import logging
 from traceback import format_exception
 from typing import (Dict, List)
 
-from connexion import App
+from connexion import FlaskApp
+from connexion.lifecycle import ConnexionRequest, ConnexionResponse
 from connexion.exceptions import (
     ExtraParameterProblem,
     Forbidden,
     OAuthProblem,
     Unauthorized,
 )
-from flask import (current_app, Response)
+from flask import current_app
 from json import dumps
 from werkzeug.exceptions import (
     BadRequest,
@@ -77,7 +78,7 @@ exceptions = {
 }
 
 
-def register_exception_handler(app: App) -> App:
+def register_exception_handler(app: FlaskApp) -> FlaskApp:
     """Register generic JSON problem handler with Connexion application
     instance.
 
@@ -201,7 +202,10 @@ def _exclude_key_nested_dict(
     return obj
 
 
-def _problem_handler_json(exception: Exception) -> Response:
+def _problem_handler_json(
+    request: ConnexionRequest,
+    exception: Exception,
+) -> ConnexionResponse:
     """Generic JSON problem handler.
 
     Args:
@@ -226,8 +230,8 @@ def _problem_handler_json(exception: Exception) -> Response:
                 exc=exception,
                 format=conf.logging.value
             )
-        return Response(
-            status=500,
+        return ConnexionResponse(
+            status_code=500,
             mimetype="application/problem+json",
         )
     # Log exception JSON & traceback
@@ -253,8 +257,8 @@ def _problem_handler_json(exception: Exception) -> Response:
                 key_sequence=member,
             ))
     # Return response
-    return Response(
-        response=dumps(keep),
-        status=status,
+    return ConnexionResponse(
+        status_code=status,
         mimetype="application/problem+json",
+        body=dumps(keep),
     )

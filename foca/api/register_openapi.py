@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
-from connexion import App
+from connexion import FlaskApp
 
 from foca.models.config import SpecConfig
 from foca.config.config_parser import ConfigParser
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def register_openapi(
-        app: App,
+        app: FlaskApp,
         specs: List[SpecConfig],
-) -> App:
+) -> FlaskApp:
     """
     Register OpenAPI specifications with Connexion application instance.
 

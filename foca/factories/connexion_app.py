@@ -4,7 +4,7 @@ from inspect import stack
 import logging
 from typing import Optional
 
-from connexion import App
+from connexion import FlaskApp
 
 from foca.models.config import Config
 
@@ -12,7 +12,7 @@ from foca.models.config import Config
 logger = logging.getLogger(__name__)
 
 
-def create_connexion_app(config: Optional[Config] = None) -> App:
+def create_connexion_app(config: Optional[Config] = None) -> FlaskApp:
     """Create and configure Connexion application instance.
 
     Args:
@@ -22,9 +22,9 @@ def create_connexion_app(config: Optional[Config] = None) -> App:
         Connexion application instance.
     """
     # Instantiate Connexion app
-    app = App(
+    app = FlaskApp(
         __name__,
-        skip_error_handlers=True,
+        # skip_error_handlers=True,
     )
 
     calling_module = ':'.join([stack()[1].filename, stack()[1].function])
@@ -41,9 +41,9 @@ def create_connexion_app(config: Optional[Config] = None) -> App:
 
 
 def __add_config_to_connexion_app(
-    app: App,
+    app: FlaskApp,
     config: Config,
-) -> App:
+) -> FlaskApp:
     """Replace default Flask and Connexion settings with FOCA configuration
     parameters.
 
@@ -55,11 +55,6 @@ def __add_config_to_connexion_app(
         Connexion application instance with updated configuration.
     """
     conf = config.server
-
-    # replace Connexion app settings
-    app.host = conf.host
-    app.port = conf.port
-    app.debug = conf.debug
 
     # replace Flask app settings
     app.app.config['DEBUG'] = conf.debug

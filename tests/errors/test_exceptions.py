@@ -5,9 +5,10 @@ Tests for exceptions.py
 from copy import deepcopy
 import json
 
-from flask import (Flask, Response)
-from connexion import App
+from connexion import FlaskApp
+from connexion.lifecycle import ConnexionResponse
 import pytest
+
 
 from foca.errors.exceptions import (
     _exc_to_str,
@@ -50,11 +51,30 @@ class UnknownException(Exception):
     pass
 
 
+@pytest.fixture
+def foca_app():
+    """Create a Connexion app."""
+    app = FlaskApp(__name__)
+    setattr(app.app.config, 'foca', Config())
+    return app
+
+
+@pytest.fixture
+def mock_connexion_request(mocker):
+    request = mocker.MagicMock()
+    request.headers = {}
+    request.args = {}
+    request.json = {}
+    request.method = "GET"
+    request.path = "/test_endpoint"
+    return request
+
+
 def test_register_exception_handler():
     """Test exception handler registration with Connexion app."""
-    app = App(__name__)
+    app = FlaskApp(__name__)
     ret = register_exception_handler(app)
-    assert isinstance(ret, App)
+    assert isinstance(ret, FlaskApp)
 
 
 def test__exc_to_str():
@@ -100,53 +120,60 @@ def test__exclude_key_nested_dict():
     assert res == EXPECTED_EXCLUDE_RESULT
 
 
-def test__problem_handler_json():
+def test__problem_handler_json(foca_app, mock_connexion_request):
     """Test problem handler with instance of custom, unlisted error."""
-    app = Flask(__name__)
-    setattr(app.config, 'foca', Config())
-    EXPECTED_RESPONSE = app.config.foca.exceptions.mapping[Exception]
-    with app.app_context():
-        res = _problem_handler_json(UnknownException())
-        assert isinstance(res, Response)
-        assert res.status == '500 INTERNAL SERVER ERROR'
+    EXPECTED_RESPONSE = (
+        foca_app.app.config.foca.exceptions.mapping[Exception]  # type: ignore
+    )
+    with foca_app.app.app_context():
+        res = _problem_handler_json(mock_connexion_request, UnknownException())
+        assert isinstance(res, ConnexionResponse)
+        assert res.status_code == 500
         assert res.mimetype == "application/problem+json"
-        response = json.loads(res.data.decode('utf-8'))
+        response = json.loads(res.body)  # type: ignore
         assert response == EXPECTED_RESPONSE
 
 
-def test__problem_handler_json_no_fallback_exception():
+def test__problem_handler_json_no_fallback_exception(
+    foca_app,
+    mock_connexion_request
+):
     """Test problem handler; unlisted error without fallback."""
-    app = Flask(__name__)
-    setattr(app.config, 'foca', Config())
-    del app.config.foca.exceptions.mapping[Exception]
-    with app.app_context():
-        res = _problem_handler_json(UnknownException())
-        assert isinstance(res, Response)
-        assert res.status == '500 INTERNAL SERVER ERROR'
+    del foca_app.app.config.foca.exceptions.mapping[Exception]  # type: ignore
+    with foca_app.app.app_context():
+        res = _problem_handler_json(mock_connexion_request, UnknownException())
+        assert isinstance(res, ConnexionResponse)
+        assert res.status_code == 500
         assert res.mimetype == "application/problem+json"
-        response = res.data.decode("utf-8")
-        assert response == ""
+        response = res.body
+        assert response is None
 
 
-def test__problem_handler_json_with_public_members():
+def test__problem_handler_json_with_public_members(
+    foca_app,
+    mock_connexion_request
+):
     """Test problem handler with public members."""
-    app = Flask(__name__)
-    setattr(app.config, 'foca', Config())
-    app.config.foca.exceptions.public_members = PUBLIC_MEMBERS
-    with app.app_context():
-        res = _problem_handler_json(UnknownException())
-        assert isinstance(res, Response)
-        assert res.status == '500 INTERNAL SERVER ERROR'
+    foca_app.app.config.foca.exceptions.public_members = (  # type: ignore
+        PUBLIC_MEMBERS
+    )
+    with foca_app.app.app_context():
+        res = _problem_handler_json(mock_connexion_request, UnknownException())
+        assert isinstance(res, ConnexionResponse)
+        assert res.status_code == 500
         assert res.mimetype == "application/problem+json"
 
 
-def test__problem_handler_json_with_private_members():
+def test__problem_handler_json_with_private_members(
+    foca_app,
+    mock_connexion_request
+):
     """Test problem handler with private members."""
-    app = Flask(__name__)
-    setattr(app.config, 'foca', Config())
-    app.config.foca.exceptions.private_members = PRIVATE_MEMBERS
-    with app.app_context():
-        res = _problem_handler_json(UnknownException())
-        assert isinstance(res, Response)
-        assert res.status == '500 INTERNAL SERVER ERROR'
+    foca_app.app.config.foca.exceptions.private_members = (  # type: ignore
+        PRIVATE_MEMBERS
+    )
+    with foca_app.app.app_context():
+        res = _problem_handler_json(mock_connexion_request, UnknownException())
+        assert isinstance(res, ConnexionResponse)
+        assert res.status_code == 500
         assert res.mimetype == "application/problem+json"
