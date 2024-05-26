@@ -5,6 +5,7 @@ import logging
 from traceback import format_exception
 from typing import (Dict, List)
 
+import connexion
 from connexion import FlaskApp
 from connexion.lifecycle import ConnexionRequest, ConnexionResponse
 from connexion.exceptions import (
@@ -13,7 +14,6 @@ from connexion.exceptions import (
     OAuthProblem,
     Unauthorized,
 )
-from flask import current_app
 from json import dumps
 from werkzeug.exceptions import (
     BadRequest,
@@ -24,7 +24,7 @@ from werkzeug.exceptions import (
     ServiceUnavailable,
 )
 
-from foca.models.config import _get_by_path
+from foca.models.config import _get_by_path, ExceptionConfig
 
 # Get logger instance
 logger = logging.getLogger(__name__)
@@ -214,8 +214,11 @@ def _problem_handler_json(
     Returns:
         JSON-formatted error response.
     """
-    # Look up exception & get status code
-    conf = current_app.config.foca.exceptions  # type: ignore[attr-defined]
+    logger.warning(f"Config: {connexion.request.state.config}")
+    logger.warning(f"ExceptionConfig: {connexion.request.state.config.exceptions}")
+    conf = connexion.request.context['config'].exceptions
+    conf: ExceptionConfig = connexion.request.state.config.exceptions
+    assert conf.mapping is not None
     exc = type(exception)
     if exc not in conf.mapping:
         exc = Exception

@@ -4,9 +4,10 @@ from connexion.exceptions import Unauthorized
 import logging
 from typing import (Dict, Iterable, List, Optional)
 
+import connexion
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from flask import current_app, request
+from flask import request
 import jwt
 from jwt.exceptions import InvalidKeyError
 import requests
@@ -36,7 +37,7 @@ def validate_token(token: str) -> Dict:
     oidc_config_claim_public_keys: str = 'jwks_uri'
 
     # Fetch security parameters
-    conf = current_app.config.foca.security.auth  # type: ignore[attr-defined]
+    conf = connexion.request.state.config.security.auth
     add_key_to_claims: bool = conf.add_key_to_claims
     allow_expired: bool = conf.allow_expired
     audience: Optional[Iterable[str]] = conf.audience
@@ -125,8 +126,7 @@ def validate_token(token: str) -> Dict:
     for key, val in claims.items():
         req_headers[key] = val
     req_headers['user_id'] = claims[claim_identity]
-    request.headers = \
-        ImmutableMultiDict(req_headers)  # type: ignore[assignment]
+    request.headers = ImmutableMultiDict(req_headers)  # type: ignore
 
     # Return token info
     return {

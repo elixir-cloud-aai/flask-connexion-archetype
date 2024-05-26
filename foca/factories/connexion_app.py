@@ -1,10 +1,11 @@
 """Factory for creating and configuring Connexion application instances."""
 
+import contextlib
 from inspect import stack
 import logging
-from typing import Optional
+from typing import AsyncIterator, Optional
 
-from connexion import FlaskApp
+from connexion import FlaskApp, ConnexionMiddleware
 
 from foca.models.config import Config
 
@@ -12,7 +13,7 @@ from foca.models.config import Config
 logger = logging.getLogger(__name__)
 
 
-def create_connexion_app(config: Optional[Config] = None) -> FlaskApp:
+def create_connexion_app(config: Optional[Config] = Config()) -> FlaskApp:
     """Create and configure Connexion application instance.
 
     Args:
@@ -21,52 +22,18 @@ def create_connexion_app(config: Optional[Config] = None) -> FlaskApp:
     Returns:
         Connexion application instance.
     """
+
+    @contextlib.asynccontextmanager
+    async def config_handler(app: ConnexionMiddleware) -> AsyncIterator:
+        yield {"config": config}
+
     # Instantiate Connexion app
     app = FlaskApp(
         __name__,
-        # skip_error_handlers=True,
+        lifespan=config_handler,
     )
 
     calling_module = ':'.join([stack()[1].filename, stack()[1].function])
     logger.debug(f"Connexion app created from '{calling_module}'.")
 
-    # Configure Connexion app
-    if config is not None:
-        app = __add_config_to_connexion_app(
-            app=app,
-            config=config,
-        )
-
-    return app
-
-
-def __add_config_to_connexion_app(
-    app: FlaskApp,
-    config: Config,
-) -> FlaskApp:
-    """Replace default Flask and Connexion settings with FOCA configuration
-    parameters.
-
-    Args:
-        app: Connexion application instance.
-        config: Application configuration.
-
-    Returns:
-        Connexion application instance with updated configuration.
-    """
-    conf = config.server
-
-    # replace Flask app settings
-    app.app.config['DEBUG'] = conf.debug
-    app.app.config['ENV'] = conf.environment
-    app.app.config['TESTING'] = conf.testing
-
-    logger.debug('Flask app settings:')
-    for (key, value) in app.app.config.items():
-        logger.debug('* {}: {}'.format(key, value))
-
-    # Add user configuration to Flask app config
-    setattr(app.app.config, 'foca', config)
-
-    logger.debug('Connexion app configured.')
     return app

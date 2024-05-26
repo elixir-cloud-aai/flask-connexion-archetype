@@ -87,10 +87,10 @@ def register_openapi(
 
         # Attach specs to connexion App
         logger.debug(f"Modified specs: {spec_parsed}")
-        spec.connexion = {} if spec.connexion is None else spec.connexion
+        spec.connexion = {} if spec.connexion is None else spec.connexion  # mod
         app.add_api(
             specification=spec_parsed,
-            **spec.model_dump().get('connexion', {}),
+            **spec.connexion,
         )
         logger.info(f"API endpoints added from spec: {spec.path_out}")
 

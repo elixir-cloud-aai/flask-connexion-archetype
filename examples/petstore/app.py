@@ -7,4 +7,4 @@ if __name__ == '__main__':
         config_file="config.yaml"
     )
     app = foca.create_app()
-    app.run()
+    app.run(host="0.0.0.0", port=8080, lifespan="on")

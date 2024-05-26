@@ -1,6 +1,6 @@
 addict~=2.4
 celery~=5.4
-connexion[swagger-ui,flask]~=3.0
+connexion[swagger-ui,flask,uvicorn]~=3.0
 #cryptography~=42.0
 flask-authz~=2.6
 Flask-PyMongo~=2.3

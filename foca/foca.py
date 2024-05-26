@@ -83,6 +83,7 @@ class Foca:
             logger.info(f"Configuration file '{self.config_file}' parsed.")
         else:
             logger.info("Default app configuration used.")
+        logger.info(f"App configuration: {self.conf}.")
 
     def create_app(self) -> FlaskApp:
         """Set up and initialize FOCA-based Connexion app.
@@ -98,12 +99,10 @@ class Foca:
         if self.conf.security.cors.enabled is True:
             connexion_app = enable_cors(connexion_app)
             logger.info("CORS enabled.")
-        else:
-            logger.info("CORS not enabled.")
 
-        # Register error handlers
-        connexion_app = register_exception_handler(connexion_app)
-        logger.info("Error handler registered.")
+        # # Register error handlers
+        # connexion_app = register_exception_handler(connexion_app)
+        # logger.info("Error handler registered.")
 
         # Register OpenAPI specs
         if self.conf.api.specs:
@@ -116,49 +115,47 @@ class Foca:
 
         # Register MongoDB
         if self.conf.db:
-            connexion_app.app.config.foca.db = (  # type: ignore
-                register_mongodb(
-                    app=connexion_app.app,
-                    conf=self.conf.db,
-                )
+            self.conf.db = register_mongodb(
+                app=connexion_app.app,
+                conf=self.conf.db,
             )
             logger.info("Database registered.")
         else:
             logger.info("No database support configured.")
 
-        # Register permission management and Casbin enforcer
-        if self.conf.security.auth.required:
-            if (
-                self.conf.security.access_control.api_specs is None
-                or self.conf.security.access_control.api_controllers is None
-            ):
-                self.conf.security.access_control.api_controllers = (
-                    DEFAULT_SPEC_CONTROLLER
-                )
+        # # Register permission management and Casbin enforcer
+        # if self.conf.security.auth.required:
+        #     if (
+        #         self.conf.security.access_control.api_specs is None
+        #         or self.conf.security.access_control.api_controllers is None
+        #     ):
+        #         self.conf.security.access_control.api_controllers = (
+        #             DEFAULT_SPEC_CONTROLLER
+        #         )
 
-            if self.conf.security.access_control.db_name is None:
-                self.conf.security.access_control.db_name = (
-                    DEFAULT_ACCESS_CONTROL_DB_NAME
-                )
+        #     if self.conf.security.access_control.db_name is None:
+        #         self.conf.security.access_control.db_name = (
+        #             DEFAULT_ACCESS_CONTROL_DB_NAME
+        #         )
 
-            if self.conf.security.access_control.collection_name is None:
-                self.conf.security.access_control.collection_name = (
-                    DEFAULT_ACESS_CONTROL_COLLECTION_NAME
-                )
+        #     if self.conf.security.access_control.collection_name is None:
+        #         self.conf.security.access_control.collection_name = (
+        #             DEFAULT_ACESS_CONTROL_COLLECTION_NAME
+        #         )
 
-            connexion_app = register_access_control(
-                cnx_app=connexion_app,
-                mongo_config=self.conf.db,
-                access_control_config=self.conf.security.access_control,
-            )
-        else:
-            if (
-                self.conf.security.access_control.api_specs
-                or self.conf.security.access_control.api_controllers
-            ):
-                logger.error(
-                    "Please enable security config to register access control."
-                )
+        #     connexion_app, self.conf.db = register_access_control(
+        #         cnx_app=connexion_app,
+        #         mongo_config=self.conf.db,
+        #         access_control_config=self.conf.security.access_control,
+        #     )
+        # else:
+        #     if (
+        #         self.conf.security.access_control.api_specs
+        #         or self.conf.security.access_control.api_controllers
+        #     ):
+        #         logger.error(
+        #             "Please enable security config to register access control."
+        #         )
 
         return connexion_app
 
@@ -168,34 +165,32 @@ class Foca:
         Returns:
             Celery application instance.
         """
-        # Create Connexion app
-        connexion_app = create_connexion_app(self.conf)
-        logger.info("Connexion app created.")
+        # # Create Connexion app
+        # connexion_app = create_connexion_app(self.conf)
+        # logger.info("Connexion app created.")
 
-        # Register error handlers
-        connexion_app = register_exception_handler(connexion_app)
-        logger.info("Error handler registered.")
+        # # Register error handlers
+        # connexion_app = register_exception_handler(connexion_app)
+        # logger.info("Error handler registered.")
 
-        # Register MongoDB
-        if self.conf.db:
-            connexion_app.app.config.foca.db = (  # type: ignore
-                register_mongodb(
-                    app=connexion_app.app,
-                    conf=self.conf.db,
-                )
-            )
-            logger.info("Database registered.")
-        else:
-            logger.info("No database support configured.")
+        # # Register MongoDB
+        # if self.conf.db:
+        #     self.conf.db = register_mongodb(
+        #         app=connexion_app.app,
+        #         conf=self.conf.db,
+        #     )
+        #     logger.info("Database registered.")
+        # else:
+        #     logger.info("No database support configured.")
 
-        # Create Celery app
-        if self.conf.jobs:
-            celery_app = create_celery_app(connexion_app.app)
-            logger.info("Support for background tasks set up.")
-        else:
-            raise ValueError(
-                "No support for background tasks configured. Please use the "
-                "'jobs' keyword section in your configuration file."
-            )
+        # # Create Celery app
+        # if self.conf.jobs:
+        #     celery_app = create_celery_app(connexion_app.app)
+        #     logger.info("Support for background tasks set up.")
+        # else:
+        #     raise ValueError(
+        #         "No support for background tasks configured. Please use the "
+        #         "'jobs' keyword section in your configuration file."
+        #     )
 
-        return celery_app
+        # return celery_app

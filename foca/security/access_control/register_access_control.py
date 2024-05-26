@@ -33,7 +33,7 @@ def register_access_control(
     cnx_app: FlaskApp,
     mongo_config: Optional[MongoConfig],
     access_control_config: AccessControlConfig
-) -> FlaskApp:
+) -> Tuple[FlaskApp, MongoConfig]:
     """Register access control configuration with flask app.
 
     Args:
@@ -66,8 +66,6 @@ def register_access_control(
     else:
         mongo_config.dbs[access_control_db] = access_db_conf
 
-    cnx_app.app.config.foca.db = mongo_config  # type: ignore
-
     # Register new database for access control.
     add_new_database(
         app=cnx_app.app,
@@ -88,7 +86,7 @@ def register_access_control(
         access_control_config=access_control_config
     )
 
-    return cnx_app
+    return cnx_app, mongo_config
 
 
 def register_permission_specs(

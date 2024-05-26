@@ -4,12 +4,14 @@ import logging
 
 from typing import (Dict, List)
 
+import connexion
 from flask import (request, current_app)
-from pymongo.collection import Collection
 from werkzeug.exceptions import (InternalServerError, NotFound)
 
-from foca.utils.logging import log_traffic
+from foca.models.config import Config
 from foca.errors.exceptions import BadRequest
+from foca.utils.db import get_client
+from foca.utils.logging import log_traffic
 
 logger = logging.getLogger(__name__)
 
@@ -62,22 +64,20 @@ def putPermission(
     """
     request_json = request.json
     if isinstance(request_json, dict):
-        app_config = current_app.config
+        app_config: Config = connexion.request.state.config
         try:
-            security_conf = \
-                app_config.foca.security  # type: ignore[attr-defined]
-            access_control_config = \
-                security_conf.access_control  # type: ignore[attr-defined]
-            db_coll_permission: Collection = (
-                app_config.foca.db.dbs[  # type: ignore[attr-defined]
-                    access_control_config.db_name]
-                .collections[access_control_config.collection_name].client
+            access_control_config = app_config.security.access_control
+            assert access_control_config.db_name is not None
+            assert access_control_config.collection_name is not None
+            client = get_client(
+                config=app_config,
+                db=access_control_config.db_name,
+                collection=access_control_config.collection_name
             )
-
             permission_data = request_json.get("rule", {})
             permission_data["id"] = id
             permission_data["ptype"] = request_json.get("policy_type", None)
-            db_coll_permission.replace_one(
+            client.replace_one(
                 filter={"id": id},
                 replacement=permission_data,
                 upsert=True
@@ -102,19 +102,19 @@ def getAllPermissions(limit=None) -> List[Dict]:
     Returns:
         List of permission dicts.
     """
-    app_config = current_app.config
-    access_control_config = \
-        app_config.foca.security.access_control  # type: ignore[attr-defined]
-    db_coll_permission: Collection = (
-        app_config.foca.db.dbs[  # type: ignore[attr-defined]
-            access_control_config.db_name
-        ].collections[access_control_config.collection_name].client
+    app_config: Config = connexion.request.state.config
+    access_control_config = app_config.security.access_control
+    assert access_control_config.db_name is not None
+    assert access_control_config.collection_name is not None
+    client = get_client(
+        config=app_config,
+        db=access_control_config.db_name,
+        collection=access_control_config.collection_name
     )
-
     if not limit:
         limit = 0
     permissions = list(
-        db_coll_permission.find(
+        client.find(
             filter={},
             projection={'_id': False}
         ).sort([('$natural', -1)]).limit(limit)
@@ -146,16 +146,16 @@ def getPermission(
     Returns:
         Permission data for the given id.
     """
-    app_config = current_app.config
-    access_control_config = \
-        app_config.foca.security.access_control  # type: ignore[attr-defined]
-    db_coll_permission: Collection = (
-        app_config.foca.db.dbs[  # type: ignore[attr-defined]
-            access_control_config.db_name
-        ].collections[access_control_config.collection_name].client
+    app_config: Config = connexion.request.state.config
+    access_control_config = app_config.security.access_control
+    assert access_control_config.db_name is not None
+    assert access_control_config.collection_name is not None
+    client = get_client(
+        config=app_config,
+        db=access_control_config.db_name,
+        collection=access_control_config.collection_name
     )
-
-    permission = db_coll_permission.find_one(filter={"id": id})
+    permission = client.find_one(filter={"id": id})
     if permission is None:
         raise NotFound
     del permission["_id"]
@@ -182,17 +182,16 @@ def deletePermission(
     Returns:
         Delete permission identifier.
     """
-    app_config = current_app.config
-    access_control_config = \
-        app_config.foca.security.access_control  # type: ignore[attr-defined]
-    db_coll_permission: Collection = (
-        app_config.foca.db.dbs[  # type: ignore[attr-defined]
-            access_control_config.db_name
-        ].collections[access_control_config.collection_name].client
+    app_config: Config = connexion.request.state.config
+    access_control_config = app_config.security.access_control
+    assert access_control_config.db_name is not None
+    assert access_control_config.collection_name is not None
+    client = get_client(
+        config=app_config,
+        db=access_control_config.db_name,
+        collection=access_control_config.collection_name
     )
-
-    del_obj_permission = db_coll_permission.delete_one({'id': id})
-
+    del_obj_permission = client.delete_one({'id': id})
     if del_obj_permission.deleted_count:
         return id
     else:
