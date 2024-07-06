@@ -23,6 +23,9 @@ from werkzeug.exceptions import (
     NotFound,
     ServiceUnavailable,
 )
+import connexion.exceptions
+import werkzeug.exceptions
+import starlette.exceptions
 
 from foca.models.config import _get_by_path, ExceptionConfig
 
@@ -77,6 +80,37 @@ exceptions = {
     }
 }
 
+exceptions_http = {
+    400: {
+        "title": "Bad Request",
+        "status": 400,
+    },
+    401: {
+        "title": "Unauthorized",
+        "status": 401,
+    },
+    403: {
+        "title": "Forbidden",
+        "status": 403,
+    },
+    404: {
+        "title": "Not Found",
+        "status": 404,
+    },
+    500: {
+        "title": "Internal Server Error",
+        "status": 500,
+    },
+    502: {
+        "title": "Bad Gateway",
+        "status": 502,
+    },
+    504: {
+        "title": "Gateway Timeout",
+        "status": 504,
+    }
+}
+
 
 def register_exception_handler(app: FlaskApp) -> FlaskApp:
     """Register generic JSON problem handler with Connexion application
@@ -89,8 +123,19 @@ def register_exception_handler(app: FlaskApp) -> FlaskApp:
         Connexion application instance with registered generic JSON problem
         handler.
     """
-    app.add_error_handler(Exception, _problem_handler_json)
-    logger.debug("Registered generic JSON problem handler with Connexion app.")
+    app.add_error_handler(
+        Exception,
+        exception_handler_builtin,
+    )
+    app.add_error_handler(
+        starlette.exceptions.HTTPException,
+        exception_handler_starlette,
+    )
+    app.add_error_handler(
+        connexion.exceptions.ProblemException,
+        exception_handler_connexion,
+    )
+    logger.debug("Registered FOCA problem handler with Connexion app.")
     return app
 
 
@@ -216,10 +261,21 @@ def _problem_handler_json(
     """
     logger.warning(f"Config: {connexion.request.state.config}")
     logger.warning(f"ExceptionConfig: {connexion.request.state.config.exceptions}")
-    conf = connexion.request.context['config'].exceptions
     conf: ExceptionConfig = connexion.request.state.config.exceptions
     assert conf.mapping is not None
     exc = type(exception)
+    logger.warning(f"Exception type: {exc}")
+    logger.warning(f"Exception type dir: {dir(exc)}")
+    logger.warning(f"Exception: {exception}")
+    logger.warning(f"Exception dir: {dir(exception)}")
+    logger.warning(f"Exception args: {exception.args}")
+    logger.warning(f"Exception args dir: {dir(exception.args)}")
+    logger.warning(f"Exception detail: {exception.detail}")
+    logger.warning(f"Exception detail dir: {dir(exception.detail)}")
+    logger.warning(f"Exception headers: {exception.headers}")
+    logger.warning(f"Exception headers dir: {dir(exception.headers)}")
+    logger.warning(f"Exception status code: {exception.status_code}")
+    logger.warning(f"Exception status code dir: {dir(exception.status_code)}")
     if exc not in conf.mapping:
         exc = Exception
     try:
@@ -264,4 +320,65 @@ def _problem_handler_json(
         status_code=status,
         mimetype="application/problem+json",
         body=dumps(keep),
+    )
+
+
+def exception_handler_builtin(
+    request: ConnexionRequest,
+    exception: Exception,
+) -> ConnexionResponse:
+    """Return JSON-formatted error response for built-in exceptions.
+
+    Return the ``500`` error response defined in the OpenAPI specification for
+    the operation during which the exception was raised. If not defined, return
+    the corresponding default response for that operation instead. If also not
+    defined, or if the exception is not associated with a specific operation,
+    return the defined global default response. If none of these are defined,
+    return a generic RFC 9457-compliant error response.
+
+    Args:
+        request: Connexion request object.
+        exception: Raised exception.
+
+    Returns:
+        JSON-formatted error response.
+    """
+    logger.warning(
+        f'Exception "{exception}" of type "{type(exception)}" raised by '
+        '"builtins.Exception" handler.'
+    )
+    return ConnexionResponse(
+        status_code=500,
+        mimetype="application/problem+json",
+        body=dumps({"title": "Internal Server Error", "status": 500}),
+    )
+
+
+def exception_handler_connexion(
+    request: ConnexionRequest,
+    exception: Exception,
+) -> ConnexionResponse:
+    logger.warning(
+        f'Exception "{exception}" of type "{type(exception)}" raised by '
+        '"connexion.exceptions.ProblemException" handler.'
+    )
+    return ConnexionResponse(
+        status_code=500,
+        mimetype="application/problem+json",
+        body=dumps({"title": "Internal Server Error", "status": 500}),
+    )
+
+
+def exception_handler_starlette(
+    request: ConnexionRequest,
+    exception: Exception,
+) -> ConnexionResponse:
+    logger.warning(
+        f'Exception "{exception}" of type "{type(exception)}" raised by '
+        '"starlette.exceptions.HTTPException" handler.'
+    )
+    return ConnexionResponse(
+        status_code=500,
+        mimetype="application/problem+json",
+        body=dumps({"title": "Internal Server Error", "status": 500}),
     )

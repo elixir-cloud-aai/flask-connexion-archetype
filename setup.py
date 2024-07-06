@@ -12,9 +12,9 @@ with open(file_name, "r") as _file:
     long_description = _file.read()
 
 install_requires = []
-req = root_dir / 'requirements.txt'
-with open(req, "r") as _file:
-    install_requires = _file.read().splitlines()
+# req = root_dir / 'requirements.txt'
+# with open(req, "r") as _file:
+#     install_requires = _file.read().splitlines()
 
 docs_require = []
 req = root_dir / 'requirements_docs.txt'
@@ -34,7 +34,7 @@ except FileNotFoundError:
 
 setup(
     name="foca",
-    version=__version__,  # noqa: F821
+    version=__version__,  # noqa: F821  # type: ignore
     description=(
         "Archetype for OpenAPI microservices based on Flask and Connexion"
     ),

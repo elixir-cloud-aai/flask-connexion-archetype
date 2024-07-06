@@ -116,6 +116,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /exceptions/wrapped:
+    get:
+      description: Raise wrapped Python exception.
+      operationId: exceptionWrapped
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/wrapped/connexion:
+    get:
+      description: Raise wrapped Connexion exception.
+      operationId: exceptionWrappedConnexion
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/wrapped/starlette:
+    get:
+      description: Raise wrapped Starlette exception.
+      operationId: exceptionWrappedStarlette
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/wrapped/werkzeug:
+    get:
+      description: Raise wrapped Werkzeug exception.
+      operationId: exceptionWrappedWerkzeug
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/custom:
+    get:
+      description: Raise custom Python exception.
+      operationId: exceptionCustom
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/custom/connexion:
+    get:
+      description: Raise custom Connexion exception.
+      operationId: exceptionCustomConnexion
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/custom/starlette:
+    get:
+      description: Raise custom Starlette exception.
+      operationId: exceptionCustomStarlette
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/custom/werkzeug:
+    get:
+      description: Raise custom Werkzeug exception.
+      operationId: exceptionCustomWerkzeug
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/builtin:
+    get:
+      description: Raise builtin Python exception.
+      operationId: exceptionBuiltin
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/builtin/connexion:
+    get:
+      description: Raise builtin Connexion exception.
+      operationId: exceptionBuiltinConnexion
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/builtin/starlette:
+    get:
+      description: Raise builtin Starlette exception.
+      operationId: exceptionBuiltinStarlette
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /exceptions/builtin/werkzeug:
+    get:
+      description: Raise builtin Werkzeug exception.
+      operationId: exceptionBuiltinWerkzeug
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Pet:

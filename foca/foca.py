@@ -100,9 +100,9 @@ class Foca:
             connexion_app = enable_cors(connexion_app)
             logger.info("CORS enabled.")
 
-        # # Register error handlers
-        # connexion_app = register_exception_handler(connexion_app)
-        # logger.info("Error handler registered.")
+        # Register error handler
+        connexion_app = register_exception_handler(connexion_app)
+        logger.info("Error handler registered.")
 
         # Register OpenAPI specs
         if self.conf.api.specs:
