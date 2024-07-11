@@ -29,7 +29,8 @@ RUN pip install \
 # Install FOCA
 COPY setup.py README.md ./
 COPY foca/ ./foca/
-RUN pip install . \
+RUN pip install --upgrade pkginfo && \
+    pip install . \
         --no-warn-script-location \
         --prefix="/install"
 
