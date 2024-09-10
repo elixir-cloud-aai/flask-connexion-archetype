@@ -1,0 +1,32 @@
+responses:
+    default:
+        "*":
+            msg: Interal Server Error
+            status_code: 500
+    400:
+        "('operationId1', 'operationId2')":
+            msg: Bad Request
+            status_code: 400
+        operationId3:
+            msg: Extra Parameter
+            status_code: 400
+    401:
+        "*":
+            msg: Unauthorized
+            status_code: 401
+        operationId4:
+            msg: Very Unauthorized
+            status_code: 401
+    403:
+        "*":
+            msg: Forbidden
+            status_code: 403
+    500:
+        "*":
+            msg: Internal Server Error
+            status_code: 500
+
+    5XX:
+        "*":
+            msg: Internal Server Error
+            status_code: 500

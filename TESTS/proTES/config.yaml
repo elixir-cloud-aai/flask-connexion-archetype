@@ -1,0 +1,147 @@
+# FOCA configuration
+# Available in app context as attributes of `connexion.request.state.config`
+# Automatically validated via FOCA
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html
+
+# Server configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.ServerConfig
+server:
+  host: "0.0.0.0"
+  port: 8080
+  debug: True
+  environment: development
+  testing: False
+  use_reloader: False
+
+# Security configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.SecurityConfig
+security:
+  auth:
+    add_key_to_claims: True
+    algorithms:
+      - RS256
+    allow_expired: False
+    audience: null
+    validation_methods:
+      - userinfo
+      - public_key
+    validation_checks: any
+
+# Database configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.DBConfig
+db:
+  host: mongodb
+  port: 27017
+  dbs:
+    taskStore:
+      collections:
+        tasks:
+          indexes:
+            - keys:
+                task_id: 1
+                worker_id: 1
+              options:
+                "unique": True
+                "sparse": True
+        service_info:
+          indexes:
+            - keys:
+                id: 1
+
+# API configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.APIConfig
+api:
+  specs:
+    - path:
+        - petstore.yaml
+      add_operation_fields:
+        x-openapi-router-controller: controllers
+        security:
+          - bearerAuth: []
+      add_security_fields:
+        x-bearerInfoFunc: foca.security.auth.validate_token
+      disable_auth: True
+      connexion:
+        strict_validation: True
+        # current specs have inconsistency, therefore disabling response validation
+        # see: https://github.com/ga4gh/task-execution-schemas/issues/136
+        validate_responses: False
+        options:
+          swagger_ui: True
+          serve_spec: True
+
+# Logging configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.LogConfig
+log:
+  version: 1
+  disable_existing_loggers: False
+  formatters:
+    standard:
+      class: logging.Formatter
+      style: "{"
+      format: "[{asctime}: {levelname:<8}] {message} [{name}]"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: 10
+      formatter: standard
+      stream: ext://sys.stderr
+  root:
+    level: 10
+    handlers: [console]
+
+jobs:
+  host: rabbitmq
+  port: 5672
+  backend: "rpc://"
+  include:
+    - pro_tes.tasks.track_task_progress
+
+# Exception configuration
+# Cf. https://foca.readthedocs.io/en/latest/modules/foca.models.html#foca.models.config.ExceptionConfig
+exceptions:
+  required_members: [["message"], ["code"]]
+  status_member: ["code"]
+  exceptions: exceptions.exceptions
+
+controllers:
+  post_task:
+    db:
+      insert_attempts: 10
+    task_id:
+      charset: string.ascii_uppercase + string.digits
+      length: 6
+    timeout:
+      post: null
+      poll: 2
+      job: null
+    polling:
+      wait: 3
+      attempts: 100
+  list_tasks:
+    default_page_size: 5
+  celery:
+    monitor:
+      timeout: 0.1
+    message_maxsize: 16777216
+
+serviceInfo:
+  doc: Proxy TES for distributing tasks across a list of service TES instances
+  name: proTES
+  storage:
+    - file:///path/to/local/storage
+
+tes:
+  service_list:
+    - "https://csc-tesk-noauth.rahtiapp.fi"
+    - "https://funnel.cloud.e-infra.cz/"
+    - "https://tesk-eu.hypatia-comp.athenarc.gr"
+    - "https://tesk-na.cloud.e-infra.cz"
+    - "https://vm4816.kaj.pouta.csc.fi/"
+
+storeLogs:
+  execution_trace: True
+
+middlewares:
+  - - "pro_tes.plugins.middlewares.task_distribution.distance.TaskDistributionDistance"
+    - "pro_tes.plugins.middlewares.task_distribution.random.TaskDistributionRandom"

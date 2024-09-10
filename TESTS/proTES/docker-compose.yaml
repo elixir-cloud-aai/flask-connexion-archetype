@@ -1,0 +1,10 @@
+version: '3.6'
+services:
+
+  mongodb:
+    image: mongo:7.0
+    restart: unless-stopped
+    volumes:
+      - ./data/petstore/db:/data/db
+    ports:
+      - "27017:27017"
