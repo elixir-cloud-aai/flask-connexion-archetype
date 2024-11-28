@@ -21,6 +21,8 @@ PATH_SPECS_2_JSON_ORIGINAL = DIR / "openapi_2_petstore.original.json"
 PATH_SPECS_2_YAML_ADDITION = DIR / "openapi_2_petstore.addition.yaml"
 PATH_SPECS_3_YAML_ORIGINAL = DIR / "openapi_3_petstore.original.yaml"
 PATH_SPECS_3_YAML_MODIFIED = DIR / "openapi_3_petstore.modified.yaml"
+PATH_SPECS_3_PATHITEMPARAM_YAML_ORIGINAL = DIR / "openapi_3_petstore_pathitemparam.original.yaml"
+PATH_SPECS_3_PATHITEMPARAM_YAML_MODIFIED = DIR / "openapi_3_petstore_pathitemparam.modified.yaml"
 PATH_SPECS_INVALID_JSON = DIR / "invalid.json"
 PATH_SPECS_INVALID_YAML = DIR / "invalid.openapi.yaml"
 PATH_NOT_FOUND = DIR / "does/not/exist.yaml"
@@ -64,6 +66,15 @@ SPEC_CONFIG_3 = {
     "disable_auth": False,
     "connexion": CONNEXION_CONFIG,
 }
+SPEC_CONFIG_3_PATHITEMPARAM = {
+    "path": PATH_SPECS_3_PATHITEMPARAM_YAML_ORIGINAL,
+    "path_out": PATH_SPECS_3_PATHITEMPARAM_YAML_MODIFIED,
+    "append": [APPEND],
+    "add_operation_fields": OPERATION_FIELDS_3,
+    "add_security_fields": SECURITY_FIELDS_3,
+    "disable_auth": False,
+    "connexion": CONNEXION_CONFIG,
+}
 SPEC_CONFIG_2_JSON = deepcopy(SPEC_CONFIG_2)
 SPEC_CONFIG_2_JSON['path'] = PATH_SPECS_2_JSON_ORIGINAL
 SPEC_CONFIG_2_LIST = deepcopy(SPEC_CONFIG_2)
@@ -89,6 +100,16 @@ class TestRegisterOpenAPI:
         """Successfully register OpenAPI 3 YAML specs with Connexion app."""
         app = App(__name__)
         spec_configs = [SpecConfig(**SPEC_CONFIG_3)]
+        res = register_openapi(app=app, specs=spec_configs)
+        assert isinstance(res, App)
+
+    def test_openapi_3_pathitemparam_yaml(self):
+        """
+        Successfully register OpenAPI 3 YAML specs with PathItem.parameters
+        field with Connexion app.
+        """
+        app = App(__name__)
+        spec_configs = [SpecConfig(**SPEC_CONFIG_3_PATHITEMPARAM)]
         res = register_openapi(app=app, specs=spec_configs)
         assert isinstance(res, App)
 

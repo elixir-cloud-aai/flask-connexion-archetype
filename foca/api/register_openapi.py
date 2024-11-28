@@ -12,6 +12,12 @@ from foca.config.config_parser import ConfigParser
 # Get logger instance
 logger = logging.getLogger(__name__)
 
+# Path Item object fields which contain an Operation object (ie: HTTP verbs).
+# Reference: https://swagger.io/specification/v3/#path-item-object
+_OPERATION_OBJECT_FIELDS = frozenset({
+    "get", "put", "post", "delete", "options", "head", "patch", "trace",
+})
+
 
 def register_openapi(
         app: App,
@@ -51,7 +57,9 @@ def register_openapi(
         if spec.add_operation_fields is not None:
             for key, val in spec.add_operation_fields.items():
                 for path_item_object in spec_parsed.get('paths', {}).values():
-                    for operation_object in path_item_object.values():
+                    for operation, operation_object in path_item_object.items():
+                        if operation not in _OPERATION_OBJECT_FIELDS:
+                            continue
                         operation_object[key] = val
             logger.debug(
                 f"Added operation fields: {spec.add_operation_fields}"
